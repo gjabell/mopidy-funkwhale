@@ -10,9 +10,9 @@ class FunkwhalePlaylistsProvider(backend.PlaylistsProvider):
         self.playlists = []
         self.refresh()
 
-
     def as_list(self):
-        return self.api.get_playlists_refs()
+        logger.warning('%s as_list called' % __name__)
+        return self.playlists
 
     def create(self, name):
         logger.warning('%s create called' % __name__)
@@ -21,13 +21,17 @@ class FunkwhalePlaylistsProvider(backend.PlaylistsProvider):
         logger.warning('%s delete called' % __name__)
 
     def get_items(self, uri):
-        return self.api.get_playlist_items_refs(uri)
+        logger.warning('%s get_items called' % __name__)
+        return self.api.get_playlist_items(uri)
 
     def lookup(self, uri):
-        return self.api.get_playlist_ref(uri)
+        logger.warning('%s lookup called' % __name__)
+        return self.api.get_playlist(uri)
 
     def refresh(self):
         logger.warning('%s refresh called' % __name__)
+        self.playlists = self.api.get_playlists()
+        logger.warning(self.playlists)
 
     def save(self, playlist):
         logger.warning('%s save called' % __name__)
