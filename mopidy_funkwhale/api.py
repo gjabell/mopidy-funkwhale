@@ -8,14 +8,15 @@ logger = logging.getLogger(__name__)
 
 
 class FunkwhaleApi:
-    def __init__(self, host, user, password):
+    def __init__(self, host, session):
         self.host = host
         self.user = user
         self.password = password
+        self.session = session
 
     def _get_request(self, path):
         try:
-            res = requests.get(path, auth=(self.user, self.password))
+            res = self.session.get(path)
         except Exception as e:
             logger.warning('FunkwhaleApi request failed for %s: %s' % (path, str(e)))
             return None
