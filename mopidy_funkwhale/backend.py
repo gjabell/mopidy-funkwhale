@@ -1,7 +1,7 @@
 import pykka
+from mopidy import backend
 
 from mopidy_funkwhale import library, playback, playlists, api
-from mopidy import backend
 
 
 class FunkwhaleBackend(pykka.ThreadingActor, backend.Backend):
@@ -17,4 +17,3 @@ class FunkwhaleBackend(pykka.ThreadingActor, backend.Backend):
         self.playback = playback.FunkwhalePlaybackProvider(audio=audio, backend=self)
         self.playlists = playlists.FunkwhalePlaylistsProvider(backend=self)
         self.uri_schemes = ['funkwhale']
-

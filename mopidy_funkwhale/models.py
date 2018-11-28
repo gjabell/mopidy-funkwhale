@@ -1,77 +1,81 @@
+import datetime
+
 from mopidy.models import Album, Artist, Playlist, Ref, Track
 
+import uri
 
-def album(json):
+
+def album(data):
     return Album(
-            uri=str(json['id']),
-            name=json['name'],
-            artists=[artist(json['artist'])],
-            num_tracks=None,
-            num_discs=None
-            date=json['release_date'],
-            musicbrainz_id=json['mbid'],
-            images=json['cover'])
+        uri=uri.get_uri(data['id']),
+        name=data['title'],
+        artists=[artist(data['artist'])],
+        num_tracks=None,
+        num_discs=None,
+        date=data['release_date'],
+        musicbrainz_id=data['mbid'],
+        images=data['cover'])
 
 
-def album_ref(json):
+def album_ref(data):
     return Ref.album(
-            uri=str(json['id']),
-            name=json['name'])
+        uri=uri.get_uri(data['id']),
+        name=data['name'])
 
 
-def artist(json):
+def artist(data):
     return Artist(
-            uri=str(json['id']),
-            name=json['name'],
-            sortname=json['name'],
-            musicbrainz_id=json['mbid'])
+        uri=uri.get_uri(data['id']),
+        name=data['name'],
+        sortname=data['name'],
+        musicbrainz_id=data['mbid'])
 
 
-def artist_ref(json):
+def artist_ref(data):
     return Ref.artist(
-            uri=str(json['id']),
-            name=json['name'])
+        uri=uri.get_uri(data['id']),
+        name=data['name'])
 
 
-def playlist(json, tracks_json):
+def playlist(data, tracks_data):
     return Playlist(
-            uri=str(json['id']),
-            name=json['name'],
-            tracks=[track(track) for track in tracks_json],
-            last_modified=_jstime_to_unix(json['modification_date']))
+        uri=uri.get_uri(data['id']),
+        name=data['name'],
+        tracks=[track(t) for t in tracks_data],
+        last_modified=_jstime_to_unix(data['modification_date']))
 
 
-def playlist_ref(json):
+def playlist_ref(data):
     return Ref.playlist(
-            uri=str(json['id']),
-            name=json['name'])
+        uri=uri.get_uri(data['id']),
+        name=data['name'])
 
 
-def track(json):
+def track(data):
     return Track(
-            uri=str(json['id']),
-            name=json['title'],
-            artists=[artist(json['artist'])],
-            album=album(json['album']),
-            composers=[],
-            performers=[],
-            genre='',
-            track_no=json['position'],
-            disc_no=None,
-            date='',
-            length=None,
-            bitrate=0,
-            comment='',
-            musicbrainz_id=json['mbid'],
-            last_modified=_jstime_to_unix(json['creation_date']))
+        uri=uri.get_uri(data['id']),
+        name=data['title'],
+        artists=[artist(data['artist'])],
+        album=album(data['album']),
+        composers=[],
+        performers=[],
+        genre='',
+        track_no=data['position'],
+        disc_no=None,
+        date='',
+        length=None,
+        bitrate=0,
+        comment='',
+        musicbrainz_id=data['mbid'],
+        last_modified=_jstime_to_unix(data['creation_date']))
 
 
-def track_ref(json):
+def track_ref(data):
     return Ref.track(
-            uri=str(json['id']),
-            name=json['title'])
+        uri=uri.get_uri(data['id']),
+        name=data['title'])
 
 
 def _jstime_to_unix(t):
-    return int(datetime.strptime(t, '%Y-%m-%dT%H:%M:%SZ').strftime('%s'))
-
+    date = datetime.datetime.strptime(t, '%Y-%m-%dT%H:%M:%S.%fZ')
+    return int(date.strftime('%s'))

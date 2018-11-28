@@ -1,7 +1,8 @@
+import logging
 from mopidy import backend
 
-import logging
 logger = logging.getLogger(__name__)
+
 
 class FunkwhalePlaylistsProvider(backend.PlaylistsProvider):
     def __init__(self, *args, **kwargs):
@@ -22,7 +23,7 @@ class FunkwhalePlaylistsProvider(backend.PlaylistsProvider):
 
     def get_items(self, uri):
         logger.warning('%s get_items called' % __name__)
-        return self.api.get_playlist_items(uri)
+        return self.api.get_playlist_items_refs(uri)
 
     def lookup(self, uri):
         logger.warning('%s lookup called' % __name__)
@@ -30,9 +31,8 @@ class FunkwhalePlaylistsProvider(backend.PlaylistsProvider):
 
     def refresh(self):
         logger.warning('%s refresh called' % __name__)
-        self.playlists = self.api.get_playlists()
+        self.playlists = self.api.get_playlists_refs()
         logger.warning(self.playlists)
 
     def save(self, playlist):
         logger.warning('%s save called' % __name__)
-
