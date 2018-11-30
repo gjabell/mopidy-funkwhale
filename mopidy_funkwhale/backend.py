@@ -1,14 +1,15 @@
 import pykka
 import requests
-import mopidy_funkwhale
 from mopidy import backend, httpclient
 
+import mopidy_funkwhale
 from mopidy_funkwhale import library, playback, playlists, api
 
 
 class FunkwhaleBackend(pykka.ThreadingActor, backend.Backend):
     def __init__(self, config, audio):
         super(FunkwhaleBackend, self).__init__()
+        self.verbose = False
         self.session = make_session(config)
         funkwhale_config = config['funkwhale']
         self.api = api.FunkwhaleApi(
@@ -30,8 +31,8 @@ def make_session(config):
     auth = (funkwhale_config['user'], funkwhale_config['password'])
 
     session = requests.Session()
-    session.proxies.update({ 'http': proxy, 'https': proxy })
-    session.headers.update({ 'user-agent': agent })
+    session.proxies.update({'http': proxy, 'https': proxy})
+    session.headers.update({'user-agent': agent})
     session.auth = auth  # TODO use jwt
 
     return session
