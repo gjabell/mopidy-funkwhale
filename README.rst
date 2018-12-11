@@ -6,7 +6,7 @@ Mopidy-Funkwhale
     :target: https://pypi.python.org/pypi/Mopidy-Funkwhale/
     :alt: Latest PyPI version
 
-.. image:: https://img.shields.io/travis/gjabell/mopidy-funkwhale/master.svg?style=flat
+.. image:: https://travis-ci.com/gjabell/mopidy-funkwhale.svg?branch=master
     :target: https://travis-ci.com/gjabell/mopidy-funkwhale
     :alt: Travis CI build status
 
