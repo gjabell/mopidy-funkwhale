@@ -1,4 +1,5 @@
 import logging
+
 from mopidy import backend
 
 logger = logging.getLogger(__name__)

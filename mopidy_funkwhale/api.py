@@ -1,17 +1,19 @@
 import collections
-import time
-
 import logging
-import requests
+import time
 import urlparse
+
 from mopidy import httpclient
+
+import requests
 
 import mopidy_funkwhale
 
 logger = logging.getLogger(__name__)
 
 
-# Modified from https://code.eliotberriot.com/funkwhale/mopidy/blob/master/mopidy_funkwhale/client.py
+# Modified from https://code.eliotberriot.com/funkwhale/mopidy/
+#                       blob/master/mopidy_funkwhale/client.py
 class SessionWithUrlBase(requests.Session):
     def __init__(self, url_base=None):
         super(SessionWithUrlBase, self).__init__()
@@ -22,7 +24,8 @@ class SessionWithUrlBase(requests.Session):
             modified_url = url
         else:
             modified_url = urlparse.urljoin(self.url_base, url)
-        return super(SessionWithUrlBase, self).request(method, modified_url, **kwargs)
+        return super(SessionWithUrlBase, self).request(method, modified_url,
+                                                       **kwargs)
 
 
 def make_session(config):
@@ -44,7 +47,8 @@ def make_session(config):
     return session
 
 
-# Modified from https://code.eliotberriot.com/funkwhale/mopidy/blob/master/mopidy_funkwhale/library.py
+# Modified from https://code.eliotberriot.com/funkwhale/mopidy/
+#                       blob/master/mopidy_funkwhale/library.py
 class Cache(collections.OrderedDict):
     def __init__(self, cache_time=3600):
         self.cache_time = cache_time
@@ -80,7 +84,8 @@ class FunkwhaleApi:
         self.cache = Cache(config['funkwhale']['cache_time'])
 
     def login(self):
-        json = self._post('token/', {'username': self.username, 'password': self.password})
+        json = self._post('token/', {'username': self.username,
+                                     'password': self.password})
         if not json:
             return None
         token = json['token']
@@ -115,9 +120,11 @@ class FunkwhaleApi:
         return self._get('playlists/%s/' % i)
 
     def get_playlist_tracks(self, i):
-        # this endpoint returns a list of items in 'results', and each item contains a 'track' that doesn't have the
-        # full track data, so we need to go get all the correct tracks based on that data
-        partials = map(lambda x: x['track']['id'], self._get('playlists/%s/tracks/' % i)['results'])
+        # this endpoint returns a list of items in 'results', and each item
+        # contains a 'track' that doesn't have the full track data, so we need
+        # to go get all the correct tracks based on that data
+        partials = map(lambda x: x['track']['id'], self._get(
+            'playlists/%s/tracks/' % i)['results'])
         return [self.get_track(t) for t in partials]
 
     def get_tracks(self):
@@ -129,7 +136,9 @@ class FunkwhaleApi:
     def get_playback(self, i):
         track = self.get_track(i)
         try:
-            return '%s?jwt=%s' % (urlparse.urljoin(self.host, track['listen_url']), self.token)
+            return '%s?jwt=%s' % (urlparse.urljoin(self.host,
+                                                   track['listen_url']),
+                                  self.token)
         except KeyError:
             return None
 

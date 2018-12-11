@@ -3,3 +3,4 @@ pytest-cov
 mock
 requests-mock
 factory_boy
+pytest-xdist

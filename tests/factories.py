@@ -1,6 +1,8 @@
-# Modified from https://dev.funkwhale.audio/funkwhale/mopidy/blob/master/tests/factories.py
+# Modified from https://dev.funkwhale.audio/funkwhale/mopidy/
+#                       blob/master/tests/factories.py
 
 import factory
+
 from mopidy import models
 
 

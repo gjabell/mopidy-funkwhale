@@ -1,4 +1,5 @@
 import logging
+
 from mopidy import backend
 from mopidy.models import Ref
 

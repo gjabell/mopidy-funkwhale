@@ -2,6 +2,7 @@ import mock
 
 from mopidy_funkwhale import models
 from mopidy_funkwhale.client import convert_uri
+
 from tests import factories
 
 
@@ -17,7 +18,7 @@ def test_client_convert_uri_uri(translator):
 
 
 @mock.patch('mopidy_funkwhale.client.translator')
-def test_client_convert_uri_uri(translator):
+def test_client_convert_uri_uris(translator):
     @convert_uri
     def fn(uris=None):
         return uris
@@ -47,7 +48,8 @@ def test_client_get_playlist_ref(client):
 
 def test_client_get_playlist(client):
     playlist = factories.PlaylistJSONFactory()
-    tracks = [factories.TrackJSONFactory() for _ in range(playlist['tracks_count'])]
+    tracks = [factories.TrackJSONFactory() for _ in
+              range(playlist['tracks_count'])]
     client.convert_uri = lambda: ''
     client.api.get_playlist = lambda _: playlist
     client.api.get_playlist_tracks = lambda _: tracks

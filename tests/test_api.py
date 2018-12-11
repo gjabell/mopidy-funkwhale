@@ -6,14 +6,17 @@ def test_api_get_playlists(api, requests_mock, mock_playlists):
 
 
 def test_api_get_playlist(api, requests_mock, mock_playlist):
-    requests_mock.get(api.session.url_base + "playlists/1/", json=mock_playlist)
+    requests_mock.get(api.session.url_base + "playlists/1/",
+                      json=mock_playlist)
 
     actual = api.get_playlist(1)
     assert actual == mock_playlist
 
 
-def test_api_get_playlist_tracks(api, requests_mock, mock_playlist_tracks, mock_track):
-    requests_mock.get(api.session.url_base + "playlists/1/tracks/", json=mock_playlist_tracks)
+def test_api_get_playlist_tracks(api, requests_mock, mock_playlist_tracks,
+                                 mock_track):
+    requests_mock.get(api.session.url_base + "playlists/1/tracks/",
+                      json=mock_playlist_tracks)
     requests_mock.get(api.session.url_base + "tracks/1/", json=mock_track)
 
     actual = api.get_playlist_tracks(1)
@@ -38,7 +41,8 @@ def test_api_get_playback(api, requests_mock, mock_track):
     requests_mock.get(api.session.url_base + "tracks/1/", json=mock_track)
 
     actual = api.get_playback(1)
-    assert actual == 'https://test.funkwhale/api/v1/listen/17068209-06d6-4375-aa0f-916b2f58afa7/?jwt=TOKEN'
+    assert actual == 'https://test.funkwhale/api/v1/listen/' \
+                     '17068209-06d6-4375-aa0f-916b2f58afa7/?jwt=TOKEN'
 
 
 def test_api_load_all_single(api):
@@ -49,9 +53,12 @@ def test_api_load_all_single(api):
 
 
 def test_api_load_all_multiple(api, requests_mock):
-    first = {'count': 3, 'results': [1], 'next': 'https://second', 'previous': None}
-    second = {'count': 3, 'results': [2], 'next': 'https://third', 'previous': 'https://first'}
-    third = {'count': 3, 'results': [3], 'next': None, 'previous': 'https://second'}
+    first = {'count': 3, 'results': [1], 'next': 'https://second',
+             'previous': None}
+    second = {'count': 3, 'results': [2], 'next': 'https://third',
+              'previous': 'https://first'}
+    third = {'count': 3, 'results': [3], 'next': None,
+             'previous': 'https://second'}
 
     requests_mock.get('https://second', json=second)
     requests_mock.get('https://third', json=third)

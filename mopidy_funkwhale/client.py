@@ -20,7 +20,8 @@ class FunkwhaleClient:
         self.api = api
 
     def get_playlists_refs(self):
-        return [models.playlist_ref(p) for p in self.api.load_all(self.api.get_playlists())]
+        return [models.playlist_ref(p) for p in
+                self.api.load_all(self.api.get_playlists())]
 
     @convert_uri
     def get_playlist_ref(self, uri=None):
@@ -28,7 +29,8 @@ class FunkwhaleClient:
 
     @convert_uri
     def get_playlist(self, uri=None):
-        return models.playlist(self.api.get_playlist(uri), self.api.get_playlist_tracks(uri))
+        return models.playlist(self.api.get_playlist(uri),
+                               self.api.get_playlist_tracks(uri))
 
     @convert_uri
     def get_playlist_items_refs(self, uri=None):
@@ -43,7 +45,8 @@ class FunkwhaleClient:
         return models.track(self.api.get_track(uri))
 
     @convert_uri
-    def get_tracks_list(self, uris=None):  # TODO might be a better endpoint for multiple tracks
+    def get_tracks_list(self, uris=None):
+        # TODO might be a better endpoint for multiple tracks
         return [models.track(t) for t in [self.api.get_track(u) for u in uris]]
 
     @convert_uri
