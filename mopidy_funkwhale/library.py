@@ -10,7 +10,7 @@ class FunkwhaleLibraryProvider(backend.LibraryProvider):
 
     def __init__(self, *args, **kwargs):
         super(FunkwhaleLibraryProvider, self).__init__(*args, **kwargs)
-        self.api = self.backend.api
+        self.client = self.backend.client
         self.verbose = self.backend.verbose
 
     def browse(self, uri):
@@ -32,7 +32,7 @@ class FunkwhaleLibraryProvider(backend.LibraryProvider):
             return []
         if uri is not None:
             uris = [uri]
-        return self.api.get_tracks_list(uris)
+        return self.client.get_tracks_list(uris=uris)
 
     def refresh(self, uri=None):
         if self.verbose:

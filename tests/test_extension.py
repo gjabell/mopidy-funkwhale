@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from mopidy_funkwhale import Extension, frontend as frontend_lib
+from mopidy_funkwhale import Extension
 
 
 def test_get_default_config():
@@ -10,6 +10,11 @@ def test_get_default_config():
 
     assert '[funkwhale]' in config
     assert 'enabled = true' in config
+    assert 'host =' in config
+    assert 'user =' in config
+    assert 'password =' in config
+    assert 'cache_time = 3600' in config
+    assert 'verbose = false' in config
 
 
 def test_get_config_schema():
@@ -17,9 +22,8 @@ def test_get_config_schema():
 
     schema = ext.get_config_schema()
 
-    # TODO Test the content of your config schema
-    #assert 'username' in schema
-    #assert 'password' in schema
-
-
-# TODO Write more tests
+    assert 'host' in schema
+    assert 'user' in schema
+    assert 'password' in schema
+    assert 'cache_time' in schema
+    assert 'verbose' in schema

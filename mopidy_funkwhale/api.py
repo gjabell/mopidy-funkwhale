@@ -1,170 +1,143 @@
+import collections
 import time
 
 import logging
+import requests
+import urlparse
+from mopidy import httpclient
 
-import models
-from uri import get_id, get_track_uri
+import mopidy_funkwhale
 
 logger = logging.getLogger(__name__)
 
 
-class Cache(object):
-    def __init__(self, ttl=3600):
-        self.cache = {}
-        self.ttl = ttl
+# Modified from https://code.eliotberriot.com/funkwhale/mopidy/blob/master/mopidy_funkwhale/client.py
+class SessionWithUrlBase(requests.Session):
+    def __init__(self, url_base=None):
+        super(SessionWithUrlBase, self).__init__()
+        self.url_base = url_base
 
-    def __call__(self, func):
-        def _memoized(*args):
-            self.func = func
-            now = time.time()
-            try:
-                value, last_update = self.cache[args]
-                age = now - last_update
-                if age > self.ttl:
-                    raise AttributeError
+    def request(self, method, url, **kwargs):
+        if url.startswith("http://") or url.startswith("https://"):
+            modified_url = url
+        else:
+            modified_url = urlparse.urljoin(self.url_base, url)
+        return super(SessionWithUrlBase, self).request(method, modified_url, **kwargs)
 
-                return value
 
-            except (KeyError, AttributeError):
-                value = self.func(*args)
-                self.cache[args] = (value, now)
-                return value
+def make_session(config):
+    proxy = httpclient.format_proxy(config['proxy'])
+    agent = httpclient.format_user_agent('%s/%s' % (
+        mopidy_funkwhale.Extension.dist_name,
+        mopidy_funkwhale.__version__))
 
-            except TypeError:
-                return self.func(*args)
+    funkwhale_config = config['funkwhale']
+    url = funkwhale_config['host']
+    if not url.endswith('/'):
+        url += '/'
+    url += 'api/v1/'
 
-        return _memoized
+    session = SessionWithUrlBase(url_base=url)
+    session.proxies.update({'http': proxy, 'https': proxy})
+    session.headers.update({'user-agent': agent})
+
+    return session
+
+
+# Modified from https://code.eliotberriot.com/funkwhale/mopidy/blob/master/mopidy_funkwhale/library.py
+class Cache(collections.OrderedDict):
+    def __init__(self, cache_time=3600):
+        self.cache_time = cache_time
+        super(Cache, self).__init__()
+
+    def set(self, key, value):
+        if not self.cache_time:
+            return
+        now = time.time()
+        self[key] = (now, value)
+
+    def get(self, key):
+        if not self.cache_time:
+            return None
+        value = super(Cache, self).get(key)
+        if not value:
+            return None
+        now = time.time()
+        t, v = value
+        if t + self.cache_time < now:
+            del self[key]
+            return None
+        return v
 
 
 class FunkwhaleApi:
-    def __init__(self, host, session):
-        self.host = host
-        self.session = session
+    def __init__(self, config):
+        self.session = make_session(config)
+        self.token = None
+        self.host = config['funkwhale']['host']
+        self.username = config['funkwhale']['user']
+        self.password = config['funkwhale']['password']
+        self.cache = Cache(config['funkwhale']['cache_time'])
 
-    def _get_request(self, path):
-        try:
-            r = self.session.get(path)
-        except Exception as e:
-            logger.warning('FunkwhaleApi request failed for %s: %s' % (path, str(e)))
-            return None
-
-        if not r.ok:
-            logger.warning('FunkwhaleApi request for %s returned status code %d' % (path, r.status_code))
-            return None
-        return r.json()
-
-    def _post_request(self, path, body=None):
-        body = body or {}
-        try:
-            r = self.session.post(path, data=body)
-        except Exception as e:
-            logger.warning('FunkwhaleApi request failed for %s: %s' % (path, str(e)))
-            return None
-
-        if not r.ok:
-            logger.warning('FunkwhaleApi request for %s returned status code %d' % (path, r.status_code))
-            return None
-        return r.json()
-
-    @Cache()
-    def _get_playlists(self):
-        json = self._get_request('%s/api/v1/playlists' % self.host)
+    def login(self):
+        json = self._post('token/', {'username': self.username, 'password': self.password})
         if not json:
-            return []
-        playlists = json['results']
-        if not playlists:
-            logger.warning('Funkwhale library has no playlists.')
-            return []
-        return playlists
-
-    @Cache()
-    def _get_tracks(self):
-        url = '%s/api/v1/tracks' % self.host
-        tracks = []
-        while url:
-            json = self._get_request(url)
-            if not json:
-                return tracks
-            results = json['results']
-            if not results:
-                return tracks
-            tracks += [self._get_track(uri) for uri in [get_track_uri(t) for t in results]]
-            url = json['next']
-            if not url:
-                return tracks
-        return tracks
-
-    @Cache()
-    def _get_playlist(self, uri):
-        playlist = self._get_request('%s/api/v1/playlists/%s' % (self.host, get_id(uri)))
-        if not playlist:
-            logger.warning('Funkwhale playlist is empty.')
-            return None
-        return playlist
-
-    @Cache()
-    def _get_playlist_tracks(self, uri):
-        json = self._get_request('%s/api/v1/playlists/%s/tracks' % (self.host, get_id(uri)))
-        if not json:
-            return []
-        items = json['results']
-        if items is None:
-            logger.warning('Funkwhale playlist has no tracks.')
-            return []
-        return [self._get_track(uri) for uri in [get_track_uri(i['id']) for i in map(lambda t: t['track'], items)]]
-
-    @Cache()
-    def _get_track(self, uri):
-        json = self._get_request('%s/api/v1/tracks/%s' % (self.host, get_id(uri)))
-        if not json:
-            logger.warning('Funkwhale track is invalid')
-            return None
-        return json
-
-    @Cache()
-    def _get_token(self):
-        json = self._post_request('%s/api/v1/token/' % self.host,
-                                  {'username': self.session.auth[0], 'password': self.session.auth[1]})
-        if not json:
-            logger.warning('Funkwhale failed to get token')
             return None
         token = json['token']
-        if not token:
-            logger.warning('Funkwhale returned invalid token')
-            return None
+        self.session.headers.update({'Authorization': 'JWT %s' % token})
+        self.token = token
         return token
 
-    @Cache()
-    def _get_playback(self, uri):
-        track = self._get_track(uri)
-        token = self._get_token()
-        if not track:
-            return None
-        return '%s%s?jwt=%s' % (self.host, track['listen_url'], token)
+    def _get(self, path):
+        cached = self.cache.get(path)
+        if cached is not None:
+            return cached
 
-    def get_playlists_refs(self):
-        return [models.playlist_ref(playlist) for playlist in self._get_playlists()]
+        r = self.session.get(path)
+        r.raise_for_status()
 
-    def get_playlist_ref(self, uri):
-        return models.playlist_ref(self._get_playlist(uri))
+        json = r.json()
+        self.cache.set(path, json)
+        return json or {}
 
-    def get_playlist(self, uri):
-        return models.playlist(self._get_playlist(uri), self._get_playlist_tracks(uri))
+    def _post(self, path, body=None):
+        body = body or {}
 
-    def get_playlist_items_refs(self, uri):
-        return [models.track_ref(track) for track in self._get_playlist_tracks(uri)]
+        r = self.session.post(path, data=body)
+        r.raise_for_status()
 
-    def get_playlist_items(self, uri):
-        return [models.track(track) for track in self._get_playlist_tracks(uri)]
+        return r.json() or {}
 
-    def get_track(self, uri):
-        return models.track(self._get_track(uri))
+    def get_playlists(self):
+        return self._get('playlists/')
 
-    def get_tracks_list(self, uris):  # TODO might be a better endpoing for multiple tracks
-        return [models.track(track) for track in [self._get_track(uri) for uri in uris]]
+    def get_playlist(self, i):
+        return self._get('playlists/%s/' % i)
+
+    def get_playlist_tracks(self, i):
+        # this endpoint returns a list of items in 'results', and each item contains a 'track' that doesn't have the
+        # full track data, so we need to go get all the correct tracks based on that data
+        partials = map(lambda x: x['track']['id'], self._get('playlists/%s/tracks/' % i)['results'])
+        return [self.get_track(t) for t in partials]
 
     def get_tracks(self):
-        return self._get_tracks()
+        return self._get('tracks/')
 
-    def get_playback(self, uri):
-        return self._get_playback(uri)
+    def get_track(self, i):
+        return self._get('tracks/%s/' % i)
+
+    def get_playback(self, i):
+        track = self.get_track(i)
+        try:
+            return '%s?jwt=%s' % (urlparse.urljoin(self.host, track['listen_url']), self.token)
+        except KeyError:
+            return None
+
+    def load_all(self, json):
+        content = json['results']
+        next_page = json['next']
+        while next_page:
+            json = self._get(next_page)
+            content += json['results']
+            next_page = json['next']
+        return content

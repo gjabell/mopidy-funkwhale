@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import re
-
 from setuptools import find_packages, setup
 
 
@@ -27,6 +26,7 @@ setup(
         'setuptools',
         'Mopidy >= 1.0',
         'Pykka >= 1.1',
+        'requests >= 2.0'
     ],
     entry_points={
         'mopidy.ext': [

@@ -23,6 +23,8 @@ class Extension(ext.Extension):
         schema['host'] = config.String()
         schema['user'] = config.String()
         schema['password'] = config.Secret()
+        schema['cache_time'] = config.Integer()
+        schema['verbose'] = config.Boolean()
         return schema
 
     def setup(self, registry):
