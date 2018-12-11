@@ -21,12 +21,9 @@ Mopidy extension for connecting to a Funkwhale instance
 Installation
 ============
 
-Install by running::
+There is no official ``pip`` package available at the moment, so this plugin can be installed directly from the repository via:
 
-    pip install Mopidy-Funkwhale
-
-Or, if available, install the Debian/Ubuntu package from `apt.mopidy.com
-<http://apt.mopidy.com/>`_.
+``pip install git+https://github.com/gjabell/mopidy-funkwhale.git``
 
 
 Configuration
@@ -44,12 +41,12 @@ Mopidy-Funkwhale to your Mopidy configuration file::
 
 The following configuration values are available:
 
-- `funkwhale/enabled`: Whether the Funkwhale extension should be enabled. Defaults to `true`.
-- `host`: The Funkwhale host to connect to. *Required*.
-- `user`: The username used to connect to the host. *Required*.
-- `password`: The password used to connect to the host. *Required*.
-- `cache_time`: The number of seconds to cache data from the host. Defaults to `3600` (5 minutes).
-- `verbose`: Whether to print verbose logs (may help with debugging). Defaults to `false`.
+- ``funkwhale/enabled``: Whether the Funkwhale extension should be enabled. Defaults to ``true``.
+- ``funkwhale/host``: The Funkwhale host to connect to. *Required*.
+- ``funkwhale/user``: The username used to connect to the host. *Required*.
+- ``funkwhale/password``: The password used to connect to the host. *Required*.
+- ``funkwhale/cache_time``: The number of seconds to cache data from the host. Defaults to ``3600`` (5 minutes).
+- ``funkwhale/verbose``: Whether to print verbose logs (may help with debugging). Defaults to ``false``.
 
 Project resources
 =================
