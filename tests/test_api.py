@@ -1,3 +1,12 @@
+import mock
+
+import mopidy_funkwhale
+
+from tests import factories
+
+from mopidy import models
+
+
 def test_api_get_playlists(api, requests_mock, mock_playlists):
     requests_mock.get(api.session.url_base + "playlists/", json=mock_playlists)
 
@@ -13,13 +22,21 @@ def test_api_get_playlist(api, requests_mock, mock_playlist):
     assert actual == mock_playlist
 
 
-def test_api_get_playlist_tracks(api, requests_mock, mock_playlist_tracks,
-                                 mock_track):
+def test_api_get_playlist_tracks(api, requests_mock, mock_playlist_tracks):
+    requests_mock.get(api.session.url_base + 'playlists/1/tracks/',
+                      json=mock_playlist_tracks)
+
+    actual = api.get_playlist_tracks(1)
+    assert actual == mock_playlist_tracks['results']
+
+
+def test_api_get_playlist_tracks_full(api, requests_mock, mock_playlist_tracks,
+                                      mock_track):
     requests_mock.get(api.session.url_base + "playlists/1/tracks/",
                       json=mock_playlist_tracks)
     requests_mock.get(api.session.url_base + "tracks/1/", json=mock_track)
 
-    actual = api.get_playlist_tracks(1)
+    actual = api.get_playlist_tracks_full(1)
     assert actual == [mock_track]
 
 
@@ -65,3 +82,80 @@ def test_api_load_all_multiple(api, requests_mock):
 
     actual = api.load_all(first)
     assert actual == [1, 2, 3]
+
+
+def test_api_save_playlist_add_track(api, requests_mock):
+    playlist = factories.PlaylistFactory()
+    playlist_id = playlist.uri
+    json_tracklist = [factories.TrackJSONFactory() for _ in range(0, 10)]
+    server_tracks = {'count': len(json_tracklist),
+                     'results': map(lambda x: {
+                         'id': x['id'],
+                         'track': x},
+                         json_tracklist)}
+    new_track = mopidy_funkwhale.models.track(factories.TrackJSONFactory())
+    # mopidy models are immutable, so we need to make a new playlist
+    tracklist = tuple(mopidy_funkwhale.models.track(json)
+                      for json in json_tracklist)
+    local_playlist = models.Playlist(
+            uri=playlist_id,
+            name=playlist.name,
+            tracks=tracklist + (new_track, ),
+            last_modified=playlist.last_modified)
+
+    requests_mock.get(api.session.url_base +
+                      'playlists/%s/tracks/' % playlist_id,
+                      json=server_tracks)
+    requests_mock.get(api.session.url_base +
+                      'playlists/%s/' % playlist_id,
+                      json={})
+
+    post_mock = mock.Mock()
+    del_mock = mock.Mock()
+
+    api._post = post_mock
+    api._delete = del_mock
+
+    api.save_playlist(mopidy_funkwhale.models.playlist_json(local_playlist))
+
+    post_mock.assert_called_with(
+        'playlists/%s/add/' % playlist_id,
+        {'tracks': [mopidy_funkwhale.translator.get_id(new_track.uri)]})
+    del_mock.assert_not_called()
+
+
+def test_api_save_playlist_remove_track(api, requests_mock):
+    playlist = factories.PlaylistFactory()
+    playlist_id = playlist.uri
+    json_tracklist = [factories.TrackJSONFactory() for _ in range(0, 10)]
+    server_tracks = {'count': len(json_tracklist),
+                     'results': map(lambda x: {
+                         'id': x['id'],
+                         'track': x},
+                         json_tracklist)}
+    track_to_del = json_tracklist.pop(-1)
+    tracklist = tuple(mopidy_funkwhale.models.track(json)
+                      for json in json_tracklist)
+    local_playlist = models.Playlist(
+            uri=playlist_id,
+            name=playlist.name,
+            tracks=tracklist,
+            last_modified=playlist.last_modified)
+
+    requests_mock.get(api.session.url_base +
+                      'playlists/%s/tracks/' % playlist_id,
+                      json=server_tracks)
+    requests_mock.get(api.session.url_base +
+                      'playlists/%s/' % playlist_id,
+                      json={})
+
+    post_mock = mock.Mock()
+    del_mock = mock.Mock()
+
+    api._post = post_mock
+    api._delete = del_mock
+
+    api.save_playlist(mopidy_funkwhale.models.playlist_json(local_playlist))
+
+    post_mock.assert_not_called()
+    del_mock.assert_called_with('playlist-tracks/%s/' % track_to_del['id'])

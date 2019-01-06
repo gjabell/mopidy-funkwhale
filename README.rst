@@ -63,6 +63,23 @@ Credits
 - `Contributors <https://github.com/gjabell/mopidy-funkwhale/graphs/contributors>`_
 
 
+Roadmap
+========
+
+- Playlists
+  [x] Load playlists
+  [x] Create new playlist
+  [x] Delete existing playlist
+  [x] Update existing playlist
+
+- Library
+  [ ] Browse library
+  [ ] Search library
+
+- Playback
+  [x] Play songs
+
+
 Changelog
 =========
 

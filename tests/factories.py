@@ -2,6 +2,7 @@
 #                       blob/master/tests/factories.py
 
 import factory
+import random
 
 from mopidy import models
 
@@ -84,5 +85,65 @@ class PlaylistJSONFactory(factory.Factory):
 
 
 class ArtistFactory(factory.Factory):
+    uri = factory.Sequence(str)
+    name = factory.Faker('name')
+    sortname = factory.Faker('name')
+    musicbrainz_id = factory.Faker('uuid4')
+
     class Meta:
         model = models.Artist
+
+
+class AlbumFactory(factory.Factory):
+    uri = factory.Sequence(str)
+    name = factory.Faker('name')
+    artists = factory.List([
+        factory.SubFactory(ArtistFactory)
+    ])
+    num_tracks = random.randint(1, 31)
+    num_discs = random.randint(1, 5)
+    date = timestr()
+    musicbrainz_id = factory.Faker('uuid4')
+    images = ['']
+
+    class Meta:
+        model = models.Album
+
+
+class TrackFactory(factory.Factory):
+    uri = factory.Sequence(str)
+    name = factory.Faker('name')
+    artists = factory.List([
+        factory.SubFactory(ArtistFactory)
+    ])
+    album = factory.SubFactory(AlbumFactory)
+    composers = factory.List([
+        factory.SubFactory(ArtistFactory)
+    ])
+    performers = factory.List([
+        factory.SubFactory(ArtistFactory)
+    ])
+    genre = factory.Faker('name')
+    track_no = factory.Sequence(int)
+    disc_no = factory.Sequence(int)
+    date = timestr()
+    length = factory.Faker('pyint')
+    bitrate = factory.Faker('pyint')
+    comment = factory.Faker('paragraph')
+    musicbrainz_id = factory.Faker('uuid4')
+    last_modified = factory.Faker('unix_time')
+
+    class Meta:
+        model = models.Track
+
+
+class PlaylistFactory(factory.Factory):
+    uri = factory.Sequence(str)
+    name = factory.Faker('name')
+    tracks = factory.List([
+        factory.SubFactory(TrackFactory)
+    ])
+    last_modified = factory.Faker('unix_time')
+
+    class Meta:
+        model = models.Playlist

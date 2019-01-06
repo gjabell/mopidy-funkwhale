@@ -15,7 +15,7 @@ def convert_uri(fn):
     return _wrapper
 
 
-class FunkwhaleClient:
+class FunkwhaleClient(object):
     def __init__(self, api):
         self.api = api
 
@@ -30,15 +30,17 @@ class FunkwhaleClient:
     @convert_uri
     def get_playlist(self, uri=None):
         return models.playlist(self.api.get_playlist(uri),
-                               self.api.get_playlist_tracks(uri))
+                               self.api.get_playlist_tracks_full(uri))
 
     @convert_uri
     def get_playlist_items_refs(self, uri=None):
-        return [models.track_ref(t) for t in self.api.get_playlist_tracks(uri)]
+        return [models.track_ref(t)
+                for t in self.api.get_playlist_tracks_full(uri)]
 
     @convert_uri
     def get_playlist_items(self, uri=None):
-        return [models.track(t) for t in self.api.get_playlist_tracks(uri)]
+        return [models.track(t)
+                for t in self.api.get_playlist_tracks_full(uri)]
 
     @convert_uri
     def get_track(self, uri=None):
@@ -52,3 +54,15 @@ class FunkwhaleClient:
     @convert_uri
     def get_playback(self, uri=None):
         return self.api.get_playback(uri)
+
+    def create_playlist(self, name):
+        return models.playlist(self.api.create_playlist(name), [])
+
+    @convert_uri
+    def delete_playlist(self, uri=None):
+        return self.api.delete_playlist(uri)
+
+    def save_playlist(self, playlist):
+        updated, tracks = self.api.save_playlist(
+            models.playlist_json(playlist))
+        return models.playlist(updated, tracks)

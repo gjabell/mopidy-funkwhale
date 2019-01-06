@@ -73,8 +73,14 @@ class Cache(collections.OrderedDict):
             return None
         return v
 
+    def remove(self, key):
+        try:
+            del self[key]
+        except KeyError:
+            return
 
-class FunkwhaleApi:
+
+class FunkwhaleApi(object):
     def __init__(self, config):
         self.session = make_session(config)
         self.token = None
@@ -113,34 +119,96 @@ class FunkwhaleApi:
 
         return r.json() or {}
 
+    def _delete(self, path):
+        r = self.session.delete(path)
+        r.raise_for_status()
+
+        return {}
+
     def get_playlists(self):
         return self._get('playlists/')
 
-    def get_playlist(self, i):
-        return self._get('playlists/%s/' % i)
+    def get_playlist(self, id):
+        return self._get('playlists/%s/' % id)
 
-    def get_playlist_tracks(self, i):
+    def get_playlist_tracks(self, id):
+        return self._get('playlists/%s/tracks/' % id)['results']
+
+    def get_playlist_tracks_full(self, id):
         # this endpoint returns a list of items in 'results', and each item
         # contains a 'track' that doesn't have the full track data, so we need
         # to go get all the correct tracks based on that data
-        partials = map(lambda x: x['track']['id'], self._get(
-            'playlists/%s/tracks/' % i)['results'])
+        partials = map(lambda x: x['track']['id'],
+                       self.get_playlist_tracks(id))
         return [self.get_track(t) for t in partials]
 
     def get_tracks(self):
         return self._get('tracks/')
 
-    def get_track(self, i):
-        return self._get('tracks/%s/' % i)
+    def get_track(self, id):
+        return self._get('tracks/%s/' % id)
 
-    def get_playback(self, i):
-        track = self.get_track(i)
+    def get_playback(self, id):
+        track = self.get_track(id)
         try:
             return '%s?jwt=%s' % (urlparse.urljoin(self.host,
                                                    track['listen_url']),
                                   self.token)
         except KeyError:
             return None
+
+    def create_playlist(self, name):
+        self.cache.remove('playlists/')
+
+        return self._post('playlists/', {'name': name,
+                                         'privacy_level': 'instance'})
+
+    def delete_playlist(self, id):
+        path = 'playlists/%s/' % id
+        self.cache.remove(path)
+
+        return self._delete(path)
+
+    def save_playlist(self, playlist):
+        """
+        Synchronize the given playlist with the server.
+
+        :playlist: A dict version of the playlist to update.
+
+        :returns: The updated playlist.
+        """
+        # TODO clean up and race conditions?
+        # we need to not duplicate items in the playlist, so load the server
+        # version and diff them
+        playlist_id = mopidy_funkwhale.translator.get_id(playlist['uri'])
+        server_playlist = self.get_playlist_tracks(playlist_id)
+
+        server_ids = map(
+            lambda x: str(x['track']['id']),
+            server_playlist)
+        server_playlist_ids = {str(t['track']['id']): str(t['id'])
+                               for t in server_playlist}
+        client_ids = map(
+            lambda x: mopidy_funkwhale.translator.get_id(x['uri']),
+            playlist['tracks'])
+
+        tracks_to_add = [t for t in client_ids
+                         if t not in server_ids]
+        tracks_to_del = [t for t in server_ids
+                         if t not in client_ids]
+
+        if len(tracks_to_add) > 0:
+            self._post('playlists/%s/add/' % playlist_id,
+                       {'tracks': tracks_to_add})
+        for track in tracks_to_del:
+            self._delete('playlist-tracks/%s/' % server_playlist_ids[track])
+
+        # finally, remove the existing playlist from the cache (if present)
+        self.cache.remove('playlists/%s/' % playlist_id)
+        self.cache.remove('playlists/%s/tracks/' % playlist_id)
+
+        return (self.get_playlist(playlist_id),
+                self.get_playlist_tracks_full(playlist_id))
 
     def load_all(self, json):
         content = json['results']

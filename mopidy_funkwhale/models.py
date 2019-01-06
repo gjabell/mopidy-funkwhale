@@ -5,75 +5,126 @@ from mopidy.models import Album, Artist, Playlist, Ref, Track
 import translator
 
 
-def album(data):
+def album(json):
     return Album(
-        uri=translator.get_album_uri(data['id']),
-        name=data['title'],
-        artists=[artist(data['artist'])],
+        uri=translator.get_album_uri(json['id']),
+        name=json['title'],
+        artists=[artist(json['artist'])],
         num_tracks=None,
         num_discs=None,
-        date=data['release_date'],
-        musicbrainz_id=data['mbid'],
-        images=data['cover'])
+        date=json['release_date'],
+        musicbrainz_id=json['mbid'],
+        images=json['cover'])
 
 
-def album_ref(data):
+def album_ref(json):
     return Ref.album(
-        uri=translator.get_album_uri(data['id']),
-        name=data['name'])
+        uri=translator.get_album_uri(json['id']),
+        name=json['name'])
 
 
-def artist(data):
+def album_json(album):
+    return {
+        'uri': album.uri,
+        'name': album.name,
+        'artists': [artist_json(a) for a in album.artists],
+        'num_tracks': album.num_tracks,
+        'num_discs': album.num_discs,
+        'date': album.date,
+        'musicbrainz_id': album.musicbrainz_id,
+        'images': [i for i in album.images]
+    }
+
+
+def artist(json):
     return Artist(
-        uri=translator.get_artist_uri(data['id']),
-        name=data['name'],
-        sortname=data['name'],
-        musicbrainz_id=data['mbid'])
+        uri=translator.get_artist_uri(json['id']),
+        name=json['name'],
+        sortname=json['name'],
+        musicbrainz_id=json['mbid'])
 
 
-def artist_ref(data):
+def artist_ref(json):
     return Ref.artist(
-        uri=translator.get_artist_uri(data['id']),
-        name=data['name'])
+        uri=translator.get_artist_uri(json['id']),
+        name=json['name'])
 
 
-def playlist(data, tracks_data):
+def artist_json(artist):
+    return {
+        'uri': artist.uri,
+        'name': artist.name,
+        'sortname': artist.sortname,
+        'musicbrainz_id': artist.musicbrainz_id
+    }
+
+
+def playlist(json, tracks_json):
     return Playlist(
-        uri=translator.get_playlist_uri(data['id']),
-        name=data['name'],
-        tracks=[track(t) for t in tracks_data],
-        last_modified=_jstime_to_unix(data['modification_date']))
+        uri=translator.get_playlist_uri(json['id']),
+        name=json['name'],
+        tracks=[track(t) for t in tracks_json],
+        last_modified=_jstime_to_unix(json['modification_date']))
 
 
-def playlist_ref(data):
+def playlist_ref(json):
     return Ref.playlist(
-        uri=translator.get_playlist_uri(data['id']),
-        name=data['name'])
+        uri=translator.get_playlist_uri(json['id']),
+        name=json['name'])
 
 
-def track(data):
+def playlist_json(playlist):
+    return {
+        'uri': playlist.uri,
+        'name': playlist.name,
+        'tracks': [track_json(t) for t in playlist.tracks],
+        'last_modified': playlist.last_modified
+    }
+
+
+def track(json):
     return Track(
-        uri=translator.get_track_uri(data['id']),
-        name=data['title'],
-        artists=[artist(data['artist'])],
-        album=album(data['album']),
+        uri=translator.get_track_uri(json['id']),
+        name=json['title'],
+        artists=[artist(json['artist'])],
+        album=album(json['album']),
         composers=[],
         performers=[],
         genre='',
-        track_no=data['position'],
+        track_no=json['position'],
         disc_no=None,
         date='',
-        length=data['duration'] * 1000,
-        bitrate=data['bitrate'],
+        length=json['duration'] * 1000,
+        bitrate=json['bitrate'],
         comment='',
-        musicbrainz_id=data['mbid'],
-        last_modified=_jstime_to_unix(data['creation_date']))
+        musicbrainz_id=json['mbid'],
+        last_modified=_jstime_to_unix(json['creation_date']))
 
 
-def track_ref(data):
+def track_ref(json):
     return Ref.track(
-        uri=translator.get_track_uri(data['id']),
-        name=data['title'])
+        uri=translator.get_track_uri(json['id']),
+        name=json['title'])
+
+
+def track_json(track):
+    return {
+        'uri': track.uri,
+        'name': track.name,
+        'artists': [artist_json(a) for a in track.artists],
+        'album': album_json(track.album),
+        'composers': [],
+        'performers': [],
+        'genre': track.genre,
+        'track_no': track.track_no,
+        'disc_no': track.disc_no,
+        'date': track.date,
+        'length': track.length,
+        'bitrate': track.bitrate,
+        'comment': track.comment,
+        'musicbrainz_id': track.musicbrainz_id,
+        'last_modified': track.last_modified
+    }
 
 
 def _jstime_to_unix(t):
