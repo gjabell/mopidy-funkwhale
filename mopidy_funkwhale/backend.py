@@ -8,7 +8,6 @@ from mopidy_funkwhale import api, client, library, playback, playlists
 class FunkwhaleBackend(pykka.ThreadingActor, backend.Backend):
     def __init__(self, config, audio):
         super(FunkwhaleBackend, self).__init__()
-        self.verbose = False
         self.api = api.FunkwhaleApi(config)
         self.client = client.FunkwhaleClient(self.api)
         self.audio = audio

@@ -1,6 +1,9 @@
-import models
+import logging
 
+import models
 import translator
+
+logger = logging.getLogger(__name__)
 
 
 def convert_uri(fn):
@@ -30,17 +33,22 @@ class FunkwhaleClient(object):
     @convert_uri
     def get_playlist(self, uri=None):
         return models.playlist(self.api.get_playlist(uri),
-                               self.api.get_playlist_tracks_full(uri))
+                               self.api.get_playlist_tracks(uri))
 
     @convert_uri
     def get_playlist_items_refs(self, uri=None):
         return [models.track_ref(t)
-                for t in self.api.get_playlist_tracks_full(uri)]
+                for t in self.api.get_playlist_tracks(uri)]
 
     @convert_uri
     def get_playlist_items(self, uri=None):
         return [models.track(t)
-                for t in self.api.get_playlist_tracks_full(uri)]
+                for t in self.api.get_playlist_tracks(uri)]
+
+    @convert_uri
+    def get_playlist_images(self, uri=None):
+        return [models.Image(i)
+                for i in self.api.get_playlist(uri)['album_covers']]
 
     @convert_uri
     def get_track(self, uri=None):
@@ -66,3 +74,20 @@ class FunkwhaleClient(object):
         updated, tracks = self.api.save_playlist(
             models.playlist_json(playlist))
         return models.playlist(updated, tracks)
+
+    def get_artists_refs(self):
+        return [models.artist_ref(a) for a in
+                self.api.load_all(self.api.get_artists())]
+
+    def get_albums_refs(self, uri=None):
+        return [models.album_ref(a) for a in
+                self.api.load_all(self.api.get_albums(id=uri))]
+
+    @convert_uri
+    def get_album_images(self, uri=None):
+        return [models.image(i) for i in
+                self.api.get_album(id=uri)['cover']['original']]
+
+    def get_album_tracks_refs(self, uri=None):
+        return [models.track_ref(t) for t in
+                self.api.get_album_tracks(uri)]

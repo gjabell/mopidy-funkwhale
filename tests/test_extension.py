@@ -14,7 +14,6 @@ def test_get_default_config():
     assert 'user =' in config
     assert 'password =' in config
     assert 'cache_time = 3600' in config
-    assert 'verbose = false' in config
 
 
 def test_get_config_schema():
@@ -26,4 +25,3 @@ def test_get_config_schema():
     assert 'user' in schema
     assert 'password' in schema
     assert 'cache_time' in schema
-    assert 'verbose' in schema

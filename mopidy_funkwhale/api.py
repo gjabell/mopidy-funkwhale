@@ -1,10 +1,10 @@
-import collections
-import logging
 import time
+
+import copy
+import logging
+import urllib
 import urlparse
-
 from mopidy import httpclient
-
 import requests
 
 import mopidy_funkwhale
@@ -35,10 +35,7 @@ def make_session(config):
         mopidy_funkwhale.__version__))
 
     funkwhale_config = config['funkwhale']
-    url = funkwhale_config['host']
-    if not url.endswith('/'):
-        url += '/'
-    url += 'api/v1/'
+    url = urlparse.urljoin(funkwhale_config['host'], '/api/v1/')
 
     session = SessionWithUrlBase(url_base=url)
     session.proxies.update({'http': proxy, 'https': proxy})
@@ -49,7 +46,7 @@ def make_session(config):
 
 # Modified from https://code.eliotberriot.com/funkwhale/mopidy/
 #                       blob/master/mopidy_funkwhale/library.py
-class Cache(collections.OrderedDict):
+class Cache(dict):
     def __init__(self, cache_time=3600):
         self.cache_time = cache_time
         super(Cache, self).__init__()
@@ -58,7 +55,9 @@ class Cache(collections.OrderedDict):
         if not self.cache_time:
             return
         now = time.time()
-        self[key] = (now, value)
+        # copy the value to ensure mutation doesn't affect the cache
+        cp = copy.deepcopy(value)
+        self[key] = (now, cp)
 
     def get(self, key):
         if not self.cache_time:
@@ -71,7 +70,8 @@ class Cache(collections.OrderedDict):
         if t + self.cache_time < now:
             del self[key]
             return None
-        return v
+        # copy the value to ensure mutation doesn't affect the cache
+        return copy.deepcopy(v)
 
     def remove(self, key):
         try:
@@ -117,65 +117,121 @@ class FunkwhaleApi(object):
         r = self.session.post(path, data=body)
         r.raise_for_status()
 
+        # delete cache reference
+        for key in self.cache.keys():
+            if key.startswith(path):
+                self.cache.remove(key)
+
         return r.json() or {}
 
     def _delete(self, path):
         r = self.session.delete(path)
         r.raise_for_status()
 
+        # delete cache reference
+        for key in self.cache.keys():
+            if key.startswith(path):
+                self.cache.remove(key)
+
         return {}
 
     def get_playlists(self):
+        """
+        Get a paged list of playlists on the server.
+
+        :return: A JSON list of playlists.
+        """
         return self._get('playlists/')
 
     def get_playlist(self, id):
+        """
+        Get a single playlist from the server.
+
+        :id: The Funkwhale id of the playlist.
+
+        :return: A JSON representation of the playlist.
+        """
         return self._get('playlists/%s/' % id)
 
     def get_playlist_tracks(self, id):
+        """
+        Get a single playlist's tracks from the server.
+
+        :id: The Funkwhale id of the playlist.
+
+        :return: A JSON list of tracks.
+        """
         return self._get('playlists/%s/tracks/' % id)['results']
 
-    def get_playlist_tracks_full(self, id):
-        # this endpoint returns a list of items in 'results', and each item
-        # contains a 'track' that doesn't have the full track data, so we need
-        # to go get all the correct tracks based on that data
-        partials = map(lambda x: x['track']['id'],
-                       self.get_playlist_tracks(id))
-        return [self.get_track(t) for t in partials]
-
     def get_tracks(self):
+        """
+        Get a paged list of tracks on the server.
+
+        :return: A JSON list of tracks.
+        """
         return self._get('tracks/')
 
     def get_track(self, id):
+        """
+        Get a single track from the server.
+
+        :id: The Funkwhale id of the track.
+
+        :return: A JSON representation of the track.
+        """
         return self._get('tracks/%s/' % id)
 
     def get_playback(self, id):
+        """
+        Get the playback url for a single track.
+
+        :id: The Funkwhale id of the track.
+
+        :return: The playback url, including jwt token.
+        """
         track = self.get_track(id)
+        uploads = track['uploads']
+        if not uploads:
+            return None
         try:
-            return '%s?jwt=%s' % (urlparse.urljoin(self.host,
-                                                   track['listen_url']),
-                                  self.token)
+            (scheme, host, _, _, _) = urlparse.urlsplit(self.host)
+            (_, _, path, query, _) = urlparse.urlsplit(
+                uploads[0]['listen_url'])
+            queries = {'jwt': self.token}
+            queries.update(urlparse.parse_qsl(query))
+            return urlparse.urlunsplit(
+                (scheme, host, path, urllib.urlencode(queries), ''))
         except KeyError:
             return None
 
     def create_playlist(self, name):
-        self.cache.remove('playlists/')
+        """
+        Create a new, empty playlist on the server.
 
+        :name: The name of the playlist.
+
+        :return: A JSON representation of the playlist.
+        """
         return self._post('playlists/', {'name': name,
                                          'privacy_level': 'instance'})
 
     def delete_playlist(self, id):
-        path = 'playlists/%s/' % id
-        self.cache.remove(path)
+        """
+        Delete a playlist from the server.
 
-        return self._delete(path)
+        :id: The Funkwhale id of the playlist.
+
+        :return: An empty dictionary.
+        """
+        return self._delete('playlists/%s/' % id)
 
     def save_playlist(self, playlist):
         """
-        Synchronize the given playlist with the server.
+        Synchronize a playlist with the server.
 
-        :playlist: A dict version of the playlist to update.
+        :playlist: A JSON representation of the playlist.
 
-        :returns: The updated playlist.
+        :return: A JSON representation of the updated playlist.
         """
         # TODO clean up and race conditions?
         # we need to not duplicate items in the playlist, so load the server
@@ -203,14 +259,60 @@ class FunkwhaleApi(object):
         for track in tracks_to_del:
             self._delete('playlist-tracks/%s/' % server_playlist_ids[track])
 
-        # finally, remove the existing playlist from the cache (if present)
-        self.cache.remove('playlists/%s/' % playlist_id)
-        self.cache.remove('playlists/%s/tracks/' % playlist_id)
-
         return (self.get_playlist(playlist_id),
-                self.get_playlist_tracks_full(playlist_id))
+                self.get_playlist_tracks(playlist_id))
+
+    def get_artists(self):
+        """
+        Get a paged list of artists on the server.
+
+        :return: A JSON list of artists.
+        """
+        return self._get('artists/')
+
+    def get_albums(self, id=None):
+        """
+        Get a paged list of albums, optionally from the given artist.
+
+        :id: The Funkwhale id of the artist.
+
+        :return: A list of all albums, or only albums from given artist.
+        """
+        path = 'albums/'
+        # TODO better path manipulation
+        if id:
+            path += '?artist=%s' % id
+
+        return self._get(path)
+
+    def get_album(self, id):
+        """
+        Get a single album from the server.
+
+        :id: The Funkwhale id of the album.
+
+        :return: A JSON representation of the album.
+        """
+        return self._get('albums/%s/' % id)
+
+    def get_album_tracks(self, id):
+        """
+        Get a single album's tracks from the server.
+
+        :id: The Funkwhale id of the album.
+
+        :return: A JSON list of tracks.
+        """
+        return self.get_album(id)['tracks']
 
     def load_all(self, json):
+        """
+        Load all content from a given paged result.
+
+        :json: The paged list of items; must have a 'results' and 'next'.
+
+        :return: A combined list of all paged content.
+        """
         content = json['results']
         next_page = json['next']
         while next_page:

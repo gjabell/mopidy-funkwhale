@@ -1,6 +1,6 @@
 import datetime
 
-from mopidy.models import Album, Artist, Playlist, Ref, Track
+from mopidy.models import Album, Artist, Playlist, Ref, Track, Image
 
 import translator
 
@@ -14,13 +14,13 @@ def album(json):
         num_discs=None,
         date=json['release_date'],
         musicbrainz_id=json['mbid'],
-        images=json['cover'])
+        images=json['cover'].values())
 
 
 def album_ref(json):
     return Ref.album(
         uri=translator.get_album_uri(json['id']),
-        name=json['name'])
+        name=json['title'])
 
 
 def album_json(album):
@@ -60,10 +60,16 @@ def artist_json(artist):
 
 
 def playlist(json, tracks_json):
+    tracks = []
+    for t in tracks_json:
+        cur = track(t['track'])
+        if cur is not None:
+            tracks += [cur]
+
     return Playlist(
         uri=translator.get_playlist_uri(json['id']),
         name=json['name'],
-        tracks=[track(t) for t in tracks_json],
+        tracks=tracks,
         last_modified=_jstime_to_unix(json['modification_date']))
 
 
@@ -83,6 +89,10 @@ def playlist_json(playlist):
 
 
 def track(json):
+    uploads = json['uploads']
+    if not uploads:
+        return None
+
     return Track(
         uri=translator.get_track_uri(json['id']),
         name=json['title'],
@@ -94,8 +104,8 @@ def track(json):
         track_no=json['position'],
         disc_no=None,
         date='',
-        length=json['duration'] * 1000,
-        bitrate=json['bitrate'],
+        length=uploads[0]['duration'] * 1000,
+        bitrate=uploads[0]['bitrate'],
         comment='',
         musicbrainz_id=json['mbid'],
         last_modified=_jstime_to_unix(json['creation_date']))
@@ -125,6 +135,13 @@ def track_json(track):
         'musicbrainz_id': track.musicbrainz_id,
         'last_modified': track.last_modified
     }
+
+
+def image(json):
+    return Image(
+        uri=json,
+        height=None,
+        width=None)
 
 
 def _jstime_to_unix(t):
