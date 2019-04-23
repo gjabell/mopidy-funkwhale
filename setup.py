@@ -19,7 +19,7 @@ setup(
     author='Galen Abell',
     author_email='galen@galenabell.com',
     description='Mopidy extension for connecting to a Funkwhale instance',
-    long_description=open('README.rst').read(),
+    long_description=open('README.md').read(),
     packages=find_packages(exclude=['tests', 'tests.*']),
     zip_safe=False,
     include_package_data=True,
