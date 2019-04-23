@@ -48,8 +48,12 @@ def test_client_get_playlist_ref(client):
 
 def test_client_get_playlist(client):
     playlist = factories.PlaylistJSONFactory()
-    tracks = [factories.TrackJSONFactory() for _ in
-              range(playlist['tracks_count'])]
+    tracks = [{
+            'id': t['id'],
+            'track': t
+        } for t in [factories.TrackJSONFactory() for _ in
+                    range(playlist['tracks_count'])]
+    ]
     client.convert_uri = lambda: ''
     client.api.get_playlist = lambda _: playlist
     client.api.get_playlist_tracks = lambda _: tracks

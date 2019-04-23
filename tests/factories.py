@@ -1,8 +1,9 @@
 # Modified from https://dev.funkwhale.audio/funkwhale/mopidy/
 #                       blob/master/tests/factories.py
 
-import factory
 import random
+
+import factory
 
 from mopidy import models
 
@@ -43,14 +44,23 @@ class AlbumJSONFactory(factory.Factory):
         model = dict
 
 
+class UploadJSONFactory(factory.Factory):
+    duration = factory.Faker("pyint")
+    bitrate = factory.Iterator([i * 1000 for i in (128, 256, 360)])
+
+    class Meta:
+        model = dict
+
+
 class TrackJSONFactory(factory.Factory):
     id = factory.Sequence(int)
     mbid = factory.Faker("uuid4")
     title = factory.Faker("name")
     position = factory.Faker("pyint")
-    duration = factory.Faker("pyint")
     creation_date = timestr()
-    bitrate = factory.Iterator([i * 1000 for i in (128, 256, 360)])
+    uploads = factory.List([
+        factory.SubFactory(UploadJSONFactory)
+    ])
     artist = factory.SubFactory(ArtistJSONFactory)
     album = factory.SubFactory(AlbumJSONFactory)
 

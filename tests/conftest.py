@@ -86,9 +86,14 @@ def mock_track():
         'position': 1,
         'lyrics': "/api/v1/tracks/2/lyrics/",
         'is_playable': True,
-        'listen_url': "/api/v1/listen/17068209-06d6-4375-aa0f-916b2f58afa7/",
-        'duration': 272,
-        'bitrate': 320000,
+        'uploads': [
+            {
+                'duration': 272,
+                'bitrate': 320000,
+                'listen_url':
+                    "/api/v1/listen/17068209-06d6-4375-aa0f-916b2f58afa7/",
+            }
+        ],
         'size': 11006770,
         'mimetype': "audio/mpeg"
     }

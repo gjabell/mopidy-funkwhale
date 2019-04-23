@@ -1,10 +1,11 @@
-import time
-
 import copy
 import logging
+import time
 import urllib
 import urlparse
+
 from mopidy import httpclient
+
 import requests
 
 import mopidy_funkwhale

@@ -1,6 +1,7 @@
 import logging
 
 import models
+
 import translator
 
 logger = logging.getLogger(__name__)
@@ -9,9 +10,9 @@ logger = logging.getLogger(__name__)
 def convert_uri(fn):
     def _wrapper(*args, **kwargs):
         for k, v in kwargs.iteritems():
-            if k is 'uri':
+            if k == 'uri':
                 kwargs[k] = translator.get_id(v)
-            elif k is 'uris':
+            elif k == 'uris':
                 kwargs[k] = [translator.get_id(u) for u in v]
         return fn(*args, **kwargs)
 

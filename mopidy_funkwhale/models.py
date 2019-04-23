@@ -1,6 +1,6 @@
 import datetime
 
-from mopidy.models import Album, Artist, Playlist, Ref, Track, Image
+from mopidy.models import Album, Artist, Image, Playlist, Ref, Track
 
 import translator
 
