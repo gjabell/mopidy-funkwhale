@@ -12,8 +12,8 @@ playlist = 'playlist'
 track = 'track'
 directory = 'directory'
 
-uri_regex = re.compile(r'(\w+):(\w+:?\w+?):(\d+)')
-uri_format = r'%s:%%s:%%d' % prefix
+uri_regex = re.compile(r'(\w+):(\w+:?\w+?):(-?\d+)')
+uri_format = r'%s:%%s:(-?\d+)' % prefix
 dir_format = r'%s:%s:%%s:(\d+)' % (prefix, directory)
 
 

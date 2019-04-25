@@ -80,7 +80,7 @@ class UserJSONFactory(factory.Factory):
 
 
 class PlaylistJSONFactory(factory.Factory):
-    id = factory.Sequence(int)
+    id = factory.Sequence(lambda i: abs(i))
     name = factory.Faker('name')
     user = factory.SubFactory(UserJSONFactory)
     modification_date = timestr()

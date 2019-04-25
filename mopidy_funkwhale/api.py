@@ -108,6 +108,9 @@ class FunkwhaleApi(object):
         r = self.session.get(path)
         r.raise_for_status()
 
+        if r.status_code == 204:
+            return {}
+
         json = r.json()
         self.cache.set(path, json)
         return json or {}
@@ -122,6 +125,9 @@ class FunkwhaleApi(object):
         for key in self.cache.keys():
             if key.startswith(path):
                 self.cache.remove(key)
+
+        if r.status_code == 204:
+            return {}
 
         return r.json() or {}
 
@@ -182,6 +188,39 @@ class FunkwhaleApi(object):
         """
         return self._get('tracks/%s/' % id)
 
+    def get_favorite_tracks(self):
+        """
+        Get a paged list of favorite tracks from the server.
+
+        :return: A JSON list of tracks.
+        """
+        return self._get('favorites/tracks/')
+
+    def favorite_track(self, id):
+        """
+        Add a track to favorites.
+
+        :id: The Funkwhale id of the track.
+
+        :return: A JSON representation of the favorite.
+        """
+        return self._post('favorites/tracks/', {'track': int(id)})
+
+    def unfavorite_track(self, id):
+        """
+        Removes a track from favorites.
+
+        :id: The Funkwhale id of the track.
+
+        :return: An empty dictionary.
+        """
+        res = self._post('favorites/tracks/remove/', {'track': int(id)})
+
+        # manually remove cache entry, since it has a different path
+        self.cache.remove('favorites/tracks/')
+
+        return res
+
     def get_playback(self, id):
         """
         Get the playback url for a single track.
@@ -226,42 +265,38 @@ class FunkwhaleApi(object):
         """
         return self._delete('playlists/%s/' % id)
 
-    def save_playlist(self, playlist):
+    def add_track_to_playlist(self, id, track):
         """
-        Synchronize a playlist with the server.
+        Add a track to a playlist.
 
-        :playlist: A JSON representation of the playlist.
+        :id: The Funkwhale id of the playlist.
+        :tracks: The Funkwhale id of a track to add to the playlist.
 
-        :return: A JSON representation of the updated playlist.
+        :return: A JSON response.
         """
-        # TODO clean up and race conditions?
-        # we need to not duplicate items in the playlist, so load the server
-        # version and diff them
-        playlist_id = mopidy_funkwhale.translator.get_id(playlist['uri'])
-        server_playlist = self.get_playlist_tracks(playlist_id)
+        res = self._post('playlist-tracks/',
+                         {'tracks': track, 'playlist': int(id)})
 
-        server_ids = map(
-            lambda x: str(x['track']['id']),
-            server_playlist)
-        server_playlist_ids = {str(t['track']['id']): str(t['id'])
-                               for t in server_playlist}
-        client_ids = map(
-            lambda x: mopidy_funkwhale.translator.get_id(x['uri']),
-            playlist['tracks'])
+        # manually remove cache item, since it has a different path
+        self.cache.remove('playlists/%s/tracks/' % id)
 
-        tracks_to_add = [t for t in client_ids
-                         if t not in server_ids]
-        tracks_to_del = [t for t in server_ids
-                         if t not in client_ids]
+        return res
 
-        if len(tracks_to_add) > 0:
-            self._post('playlists/%s/add/' % playlist_id,
-                       {'tracks': tracks_to_add})
-        for track in tracks_to_del:
-            self._delete('playlist-tracks/%s/' % server_playlist_ids[track])
+    def remove_track_from_playlist(self, id, track):
+        """
+        Remove a track from a playlist.
 
-        return (self.get_playlist(playlist_id),
-                self.get_playlist_tracks(playlist_id))
+        :id: The Funkwhale id of the playlist.
+        :track: The playlist id of the track to remove.
+
+        :return: An empty dictionary.
+        """
+        res = self._delete('playlist-tracks/%s/' % track)
+
+        # manually remove cache item, since it has a different path
+        self.cache.remove('playlists/%s/tracks/' % id)
+
+        return res
 
     def get_artists(self):
         """
