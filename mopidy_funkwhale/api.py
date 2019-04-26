@@ -263,7 +263,12 @@ class FunkwhaleApi(object):
 
         :return: An empty dictionary.
         """
-        return self._delete('playlists/%s/' % id)
+        res = self._delete('playlists/%s/' % id)
+
+        # manually remove cache entry, since it has a different path
+        self.cache.remove('playlists/')
+
+        return res
 
     def add_track_to_playlist(self, id, track):
         """

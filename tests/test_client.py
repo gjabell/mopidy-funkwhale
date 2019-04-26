@@ -1,7 +1,6 @@
 import mock
 
 import mopidy_funkwhale
-
 from mopidy_funkwhale import models
 from mopidy_funkwhale.client import (convert_uri,
                                      favorites_playlist)

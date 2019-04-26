@@ -81,12 +81,14 @@ def test_api_create_playlist(api, requests_mock, mock_playlist):
 
 
 def test_api_delete_playlist(api, requests_mock, mock_playlist):
+    api.cache.set('playlists/', {})
     api.cache.set('playlists/1/', {})
     requests_mock.delete(api.session.url_base + 'playlists/1/')
 
     actual = api.delete_playlist('1')
     assert actual == {}
     assert api.cache.get('playlists/1/') is None
+    assert api.cache.get('playlists/') is None
 
 
 def test_api_add_track_to_playlist(api, requests_mock):

@@ -22,7 +22,7 @@ class FunkwhalePlaylistsProvider(backend.PlaylistsProvider):
         return playlist
 
     def delete(self, uri):
-        success = self.client.delete_playlist(uri=uri)
+        success = self.client.delete_playlist(uri=uri) is not None
         self.refresh()
         return success
 

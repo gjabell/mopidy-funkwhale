@@ -1,11 +1,11 @@
-from datetime import datetime as dt
 import logging
+from datetime import datetime as dt
 
 import models
 
-import mopidy_funkwhale
-
 import translator
+
+import mopidy_funkwhale
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +102,9 @@ class FunkwhaleClient(object):
 
     @convert_uri
     def delete_playlist(self, uri=None):
+        if _is_favorites(uri):
+            return None
+
         return self.api.delete_playlist(uri)
 
     def save_playlist(self, playlist):
