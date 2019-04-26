@@ -25,6 +25,11 @@ def backend(config):
 
 
 @pytest.fixture
+def playlists(backend):
+    return backend.playlists
+
+
+@pytest.fixture
 def api(backend):
     backend.api.token = 'TOKEN'
     return backend.api
