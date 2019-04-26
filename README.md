@@ -2,11 +2,11 @@
 
 [![](https://img.shields.io/pypi/v/Mopidy-Funkwhale.svg?style=flat "Latest PyPI version")](https://pypi.python.org/pypi/Mopidy-Funkwhale/)
 [![](https://travis-ci.com/gjabell/mopidy-funkwhale.svg?branch=master "Travis CI build status")](https://travis-ci.com/gjabell/mopidy-funkwhale)
-[![](https://coveralls.io/repos/github/gjabell/mopidy-funkwhale/badge.svg "Test coverage")](https://coveralls.io/github/gjabell/mopidy-funkwhale)
+[![Coverage Status](https://coveralls.io/repos/github/gjabell/mopidy-funkwhale/badge.svg?branch=master)](https://coveralls.io/github/gjabell/mopidy-funkwhale?branch=master)
 
 Mopidy extension for connecting to a Funkwhale instance
 
-*This project is under active development!* There will be bugs and performance issues, and some features are still missing. Please feel free to open an issue or make a pull request if you run into any issues, or think of a new feature to add. See [Roadmap](#roadmap) for a list of what's working and what's not.
+**This project is under development!** There will be bugs and performance issues, and some features are still missing. Please feel free to open an issue or make a pull request if you run into any issues, or think of a new feature to add. See [Roadmap](#roadmap) for a list of what's working and what's not.
 
 Tested using Iris and ncmpcpp (mpd)
 
