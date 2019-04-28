@@ -13,7 +13,6 @@ def config():
             "user": "user",
             "password": "password",
             "cache_time": 3600,
-            "verbose": False
         },
         "proxy": {}
     }

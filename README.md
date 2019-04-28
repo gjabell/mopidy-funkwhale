@@ -28,7 +28,6 @@ host = https://test.funkwhale.com
 user = test
 password = badpassword
 cache_time = 3600
-verbose = false
 ```
 
 The following configuration values are available:
@@ -38,7 +37,6 @@ The following configuration values are available:
 - `funkwhale/user`: The username used to connect to the host. *Required*.
 - `funkwhale/password`: The password used to connect to the host. *Required*.
 - `funkwhale/cache_time`: The number of seconds to cache data from the host. Defaults to `3600` (5 minutes).
-- `funkwhale/verbose`: Whether to print verbose logs (may help with debugging). Defaults to `false`.
 
 ## Project resources
 
