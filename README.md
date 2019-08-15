@@ -6,7 +6,7 @@
 
 Mopidy extension for connecting to a Funkwhale instance
 
-**This project is under development!** There will be bugs and performance issues, and some features are still missing. Please feel free to open an issue or make a pull request if you run into any issues, or think of a new feature to add. See [Roadmap](#roadmap) for a list of what's working and what's not.
+**ABANDONED** This project has been abandoned, since I am no longer using Funkwhale. If you are interested in my current music setup, please take a look [at this post](https://galenabell.com/2019/08/15/an-open-music-setup/)!
 
 Tested using Iris and ncmpcpp (mpd)
 
